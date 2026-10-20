@@ -1,0 +1,314 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with display name and unique case-insensitive username handle",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique Firebase Auth UID"
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique username with @ prefix",
+          "maxLength": 30
+        },
+        "usernameLower": {
+          "type": "string",
+          "description": "Lowercase sanitized username handle for unique lookup",
+          "maxLength": 30
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user",
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user",
+          "maxLength": 100
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Profile picture URL or empty"
+        },
+        "bio": {
+          "type": "string",
+          "description": "User status or bio description",
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": ["online", "offline", "away"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of user creation"
+        }
+      },
+      "required": ["userId", "username", "usernameLower", "displayName", "email", "createdAt"]
+    },
+    "UsernameRecord": {
+      "title": "UsernameRecord",
+      "description": "Registry for case-insensitive unique username reservation",
+      "type": "object",
+      "properties": {
+        "usernameLower": {
+          "type": "string",
+          "description": "Lowercase sanitized username"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID"
+        },
+        "email": {
+          "type": "string",
+          "description": "Associated user email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["usernameLower", "userId", "createdAt"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "Friend request sent from one user to another",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "fromUserId": {
+          "type": "string"
+        },
+        "fromUsername": {
+          "type": "string"
+        },
+        "fromDisplayName": {
+          "type": "string"
+        },
+        "fromAvatarUrl": {
+          "type": "string"
+        },
+        "toUserId": {
+          "type": "string"
+        },
+        "toUsername": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "rejected"]
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["fromUserId", "fromUsername", "toUserId", "toUsername", "status", "createdAt"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "A confirmed contact of the user",
+      "type": "object",
+      "properties": {
+        "contactUserId": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "type": "string"
+        },
+        "bio": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["contactUserId", "username", "displayName"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "One-to-one conversation between two users",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "participants": {
+          "type": "array",
+          "description": "Array of 2 user IDs"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of the last message or update"
+        }
+      },
+      "required": ["id", "participants", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual chat message in a conversation",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "conversationId": {
+          "type": "string"
+        },
+        "senderId": {
+          "type": "string"
+        },
+        "senderUsername": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "voice", "image"]
+        },
+        "voiceDuration": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "delivered", "read"]
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "conversationId", "senderId", "type", "createdAt"]
+    },
+    "CallSession": {
+      "title": "CallSession",
+      "description": "WebRTC voice or video signaling call session",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "callerId": {
+          "type": "string"
+        },
+        "callerName": {
+          "type": "string"
+        },
+        "callerUsername": {
+          "type": "string"
+        },
+        "callerAvatarUrl": {
+          "type": "string"
+        },
+        "calleeId": {
+          "type": "string"
+        },
+        "calleeName": {
+          "type": "string"
+        },
+        "calleeUsername": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["voice", "video"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["calling", "connected", "rejected", "ended"]
+        },
+        "offer": {
+          "type": "object",
+          "description": "SDP offer description"
+        },
+        "answer": {
+          "type": "object",
+          "description": "SDP answer description"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "endedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "callerId", "calleeId", "type", "status", "createdAt"]
+    },
+    "IceCandidate": {
+      "title": "IceCandidate",
+      "description": "WebRTC ICE candidate payload for peer-to-peer connectivity",
+      "type": "object",
+      "properties": {
+        "candidate": {
+          "type": "string"
+        },
+        "sdpMid": {
+          "type": "string"
+        },
+        "sdpMLineIndex": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["candidate", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles indexed by UID"
+    },
+    "/usernames/{usernameLower}": {
+      "schema": "UsernameRecord",
+      "description": "Unique username reservations and handle resolution"
+    },
+    "/friendRequests/{requestId}": {
+      "schema": "FriendRequest",
+      "description": "Friend requests exchanged between users"
+    },
+    "/users/{userId}/contacts/{contactUserId}": {
+      "schema": "Contact",
+      "description": "Contacts list for each user"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "1:1 chat conversations"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Message subcollection within a conversation"
+    },
+    "/calls/{callId}": {
+      "schema": "CallSession",
+      "description": "WebRTC signaling call sessions"
+    },
+    "/calls/{callId}/callerCandidates/{candidateId}": {
+      "schema": "IceCandidate",
+      "description": "Caller ICE candidates"
+    },
+    "/calls/{callId}/calleeCandidates/{candidateId}": {
+      "schema": "IceCandidate",
+      "description": "Callee ICE candidates"
+    }
+  }
+}

@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    function isConversationParticipant(convId) {
+      return isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants);
+    }
+
+    function isCallParticipant(callId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/calls/$(callId)).data.callerId == request.auth.uid ||
+        get(/databases/$(database)/documents/calls/$(callId)).data.calleeId == request.auth.uid
+      );
+    }
+
+    // Connection testing endpoint
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && incoming().userId == userId
+                    && incoming().username is string
+                    && incoming().username.size() >= 3 && incoming().username.size() <= 30
+                    && incoming().usernameLower is string
+                    && incoming().usernameLower.size() >= 2 && incoming().usernameLower.size() <= 30
+                    && incoming().displayName is string
+                    && incoming().displayName.size() >= 1 && incoming().displayName.size() <= 60;
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && incoming().userId == userId;
+      allow delete: if false;
+
+      // User Contacts Subcollection
+      match /contacts/{contactUserId} {
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        allow create, update: if isSignedIn() && (request.auth.uid == userId || request.auth.uid == contactUserId);
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // Usernames Registry Collection for Uniqueness & Handle Resolution
+    match /usernames/{usernameLower} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid
+                    && isValidId(usernameLower);
+      allow update: if isSignedIn() && incoming().userId == request.auth.uid
+                    && existing().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // Friend Requests Collection
+    match /friendRequests/{requestId} {
+      allow get: if isSignedIn() && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && incoming().fromUserId == request.auth.uid
+                    && incoming().toUserId is string
+                    && incoming().status == 'pending';
+      allow update: if isSignedIn() && (
+        // Recipient can accept or reject
+        (resource.data.toUserId == request.auth.uid && incoming().status in ['accepted', 'rejected']) ||
+        // Sender can cancel
+        (resource.data.fromUserId == request.auth.uid && incoming().status in ['rejected'])
+      );
+      allow delete: if isSignedIn() && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+    }
+
+    // Conversations Collection (1:1 messaging)
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && (request.auth.uid in resource.data.participants);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && (request.auth.uid in incoming().participants);
+      allow update: if isSignedIn() && (request.auth.uid in resource.data.participants);
+      allow delete: if false;
+
+      // Messages Subcollection
+      match /messages/{messageId} {
+        allow read: if isConversationParticipant(conversationId);
+        allow create: if isSignedIn()
+                      && incoming().senderId == request.auth.uid
+                      && isConversationParticipant(conversationId);
+        allow update: if isConversationParticipant(conversationId);
+        allow delete: if false;
+      }
+    }
+
+    // WebRTC Calls Collection
+    match /calls/{callId} {
+      allow get: if isSignedIn() && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && incoming().callerId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
+      allow delete: if isSignedIn() && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
+
+      // Caller ICE candidates subcollection
+      match /callerCandidates/{candidateId} {
+        allow read, write: if isSignedIn();
+      }
+
+      // Callee ICE candidates subcollection
+      match /calleeCandidates/{candidateId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+  }
+}

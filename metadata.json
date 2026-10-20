@@ -1,0 +1,11 @@
+{
+  "name": "ArfaChat",
+  "description": "Responsive messaging and calling web app featuring chats, updates, contact search by @username, voice and video calling.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
